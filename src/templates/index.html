@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Granja Dashboard</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard Granja</h1>
+        
+        <div class="section">
+            <h2>Últimos Animales</h2>
+            <div id="animales" class="data-grid"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Últimas Plantas</h2>
+            <div id="plantas" class="data-grid"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Última Producción</h2>
+            <div id="produccion" class="data-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar datos de animales
+            fetch('/api/animales')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('animales');
+                    data.animales.forEach(animal => {
+                        container.innerHTML += `
+                            <div class="card">
+                                <h3>${animal.nombre}</h3>
+                                <p><strong>Estado:</strong> ${animal.estado}</p>
+                                <p>${animal.descripcion || 'Sin descripción'}</p>
+                            </div>
+                        `;
+                    });
+                });
+
+            // Cargar datos de plantas
+            fetch('/api/plantas')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('plantas');
+                    data.plantas.forEach(planta => {
+                        container.innerHTML += `
+                            <div class="card">
+                                <h3>${planta.nombre}</h3>
+                                <p><strong>Estado:</strong> ${planta.estado}</p>
+                                <p><strong>Ubicación:</strong> ${planta.ubicacion}</p>
+                            </div>
+                        `;
+                    });
+                });
+
+            // Cargar datos de producción
+            fetch('/api/produccion')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('produccion');
+                    data.produccion.forEach(item => {
+                        container.innerHTML += `
+                            <div class="card">
+                                <h3>${item.animal}</h3>
+                                <p><strong>Tipo:</strong> ${item.tipo}</p>
+                                <p><strong>Cantidad:</strong> ${item.cantidad}</p>
+                                <p><strong>Fecha:</strong> ${item.fecha}</p>
+                            </div>
+                        `;
+                    });
+                });
+        });
+    </script>
+</body>
+</html>

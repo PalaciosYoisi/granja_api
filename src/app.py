@@ -1,64 +1,69 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from config import config
 from flask_mysqldb import MySQL
-
 
 app = Flask(__name__)
 conexion = MySQL(app)
 
-#primer metodo para interactuar con la bd (GET) listar o mostrar
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-@app.route('/animales', methods=['GET'])
-
+# Rutas API para obtener datos
+@app.route('/api/animales', methods=['GET'])
 def listar_animales():
-    
     try:
         cursor = conexion.connection.cursor()
-        sql = "SELECT id_animal, nombre_comun, estado, descripcion, fecha_registro from animales"
+        sql = "SELECT id_animal, nombre_comun, estado, descripcion FROM animales ORDER BY id_animal DESC LIMIT 15"
         cursor.execute(sql)
-        datos = cursor.fetchall() #los datos de la consulta se almacenan en esta variable 
-        animales = []
-        
-        for fila in datos:
-            
-            animal = {
-                'id_animal': fila[0],
-                'nombre_comun': fila[1],
-                'estado': fila[2],
-                'descripcion': fila[3],
-                'fecha_registro': fila[4]
-            }
-            
-            animales.append(animal)
-        return jsonify({'animal':animal, 'Mensaje': 'Animales listados'})
-    
+        datos = cursor.fetchall()
+        animales = [{
+            'id': fila[0],
+            'nombre': fila[1],
+            'estado': fila[2],
+            'descripcion': fila[3]
+        } for fila in datos]
+        return jsonify({'animales': animales})
     except Exception as ex:
-        return jsonify({'Mensaje': 'Error'})
-    
-    
-#segundo metodo para interactuar con la bd (POST) insertar o agregar
-@app.route('/animales', methods=['POST'])
+        return jsonify({'error': str(ex)}), 500
 
-def agregar_animal():
-    
+@app.route('/api/plantas', methods=['GET'])
+def listar_plantas():
     try:
-       # print(request.json)  
         cursor = conexion.connection.cursor()
-        sql = """INSERT INTO animales (nombre_comun, estado, descripcion, fecha_registro)
-        VALUES ('{0}', '{1}', '{2}', '{3}')""".format(request.json['nombre_comun'], request.json['estado'], request.json['descripcion'], request.json['fecha_registro'])
+        sql = "SELECT id_planta, nombre_comun, estado, ubicacion FROM plantas ORDER BY id_planta DESC LIMIT 15"
         cursor.execute(sql)
-        conexion.connection.commit() #se guardan los cambios en la base de datos
-        return jsonify({'Mensaje': 'Animal agregado'})  
-    
+        datos = cursor.fetchall()
+        plantas = [{
+            'id': fila[0],
+            'nombre': fila[1],
+            'estado': fila[2],
+            'ubicacion': fila[3]
+        } for fila in datos]
+        return jsonify({'plantas': plantas})
     except Exception as ex:
-        return jsonify({'Mensaje': 'Error'})
-    
-def pagina_no_encontrada(error):
-    return "<h1> La pagina que intentas buscar no existe...</h1>" , 404
+        return jsonify({'error': str(ex)}), 500
+
+@app.route('/api/produccion', methods=['GET'])
+def listar_produccion():
+    try:
+        cursor = conexion.connection.cursor()
+        sql = """SELECT p.id_produccion, a.nombre_comun, p.tipo_produccion, p.cantidad, p.fecha_recoleccion 
+                 FROM produccion p JOIN animales a ON p.id_animal = a.id_animal 
+                 ORDER BY p.fecha_recoleccion DESC LIMIT 10"""
+        cursor.execute(sql)
+        datos = cursor.fetchall()
+        produccion = [{
+            'id': fila[0],
+            'animal': fila[1],
+            'tipo': fila[2],
+            'cantidad': float(fila[3]),
+            'fecha': fila[4].strftime('%Y-%m-%d') if fila[4] else None
+        } for fila in datos]
+        return jsonify({'produccion': produccion})
+    except Exception as ex:
+        return jsonify({'error': str(ex)}), 500
 
 if __name__ == '__main__':
-    
     app.config.from_object(config['development'])
-    app.register_error_handler(404, pagina_no_encontrada)
-    app.run()
-   
+    app.run(debug=True)
